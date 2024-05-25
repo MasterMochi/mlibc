@@ -1,0 +1,9 @@
+build/obj/
+build/integ_test/
+build/unit_test/
+doxygen/output
+doxygen/log
+tags
+*.o
+*.a
+!.gitkeep
