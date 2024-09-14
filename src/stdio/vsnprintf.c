@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*                                                                            */
 /* src/stdio/vsnprintf.c                                                      */
-/*                                                                 2024/05/12 */
+/*                                                                 2024/06/22 */
 /* Copyright (C) 2023-2024 Mochi.                                             */
 /*                                                                            */
 /******************************************************************************/
@@ -111,8 +111,8 @@ MLIBC_PROTO( static void, GetPrecision(   InputInfo_t *pInputInfo, ConvertInfo_t
 MLIBC_PROTO( static void, GetSpecifier(   InputInfo_t *pInputInfo, ConvertInfo_t *pConvertInfo ) );
 MLIBC_PROTO( static void, GetWidth(       InputInfo_t *pInputInfo, ConvertInfo_t *pConvertInfo ) );
 
-MLIBC_PROTO( static          long long, PopSignedInteger(   va_list args, uint8_t length ) );
-MLIBC_PROTO( static unsigned long long, PopUnsignedInteger( va_list args, uint8_t length ) );
+MLIBC_PROTO( static          long long, PopSignedInteger(   InputInfo_t *pInputInfo, ConvertInfo_t *pConvertInfo ) );
+MLIBC_PROTO( static unsigned long long, PopUnsignedInteger( InputInfo_t *pInputInfo, ConvertInfo_t *pConvertInfo ) );
 
 MLIBC_PROTO( static bool, PutChar(    OutputInfo_t *pOutputInfo, char          c,             ssize_t sizeChar ) );
 MLIBC_PROTO( static bool, PutInteger( OutputInfo_t *pOutputInfo, ConvertInfo_t *pConvertInfo ) );
@@ -166,6 +166,9 @@ static void Convert( OutputInfo_t *pOutputInfo,
                      InputInfo_t  *pInputInfo   )
 {
     ConvertInfo_t convertInfo;  /* 変換情報   */
+
+    /* 初期化 */
+    memset( &convertInfo, 0, sizeof ( ConvertInfo_t ) );
 
     /* 変換情報取得 */
     MLIBC_CALL( GetConvertInfo( pInputInfo, &convertInfo ) );
@@ -272,7 +275,7 @@ static void ConvertSignedInteger( OutputInfo_t  *pOutputInfo,
     value    = 0;
 
     /* 整数値取得 */
-    value = MLIBC_CALL( PopSignedInteger( pInputInfo->args, pConvertInfo->length ) );
+    value = MLIBC_CALL( PopSignedInteger( pInputInfo, pConvertInfo ) );
 
     /* 符号設定 */
     MLIBC_CALL( SetSign( pConvertInfo, value ) );
@@ -406,7 +409,7 @@ static void ConvertUnsignedInteger( OutputInfo_t  *pOutputInfo,
     value    = 0;
 
     /* 数値取得 */
-    value = MLIBC_CALL( PopUnsignedInteger( pInputInfo->args, pConvertInfo->length ) );
+    value = MLIBC_CALL( PopUnsignedInteger( pInputInfo, pConvertInfo ) );
 
     /* 代替形式文字列設定 */
     MLIBC_CALL( SetAlt( pConvertInfo ) );
@@ -841,17 +844,17 @@ static void GetWidth( InputInfo_t   *pInputInfo,
 
 /******************************************************************************/
 /**
- * @brief       符号付き引数値取得
- * @details     長さ修飾子に基づき符号付き引数値を取得する。
+ * @brief           符号付き引数値取得
+ * @details         長さ修飾子に基づき符号付き引数値を取得する。
  *
- * @param[in]   args    可変長引数リスト
- * @param[in]   length  長さ修飾子
+ * @param[in,out]   *pInputInfo   入力先情報
+ * @param[out]      *pConvertInfo 変換情報
  *
- * @return      引数値を返す。
+ * @return          引数値を返す。
  */
 /******************************************************************************/
-static long long PopSignedInteger( va_list args,
-                                   uint8_t length )
+static long long PopSignedInteger( InputInfo_t   *pInputInfo,
+                                   ConvertInfo_t *pConvertInfo )
 {
     long long ret;
 
@@ -859,37 +862,37 @@ static long long PopSignedInteger( va_list args,
     ret = 0;
 
     /* 長さ修飾子判定 */
-    if ( length == LENGTH_CHAR ) {
+    if ( pConvertInfo->length == LENGTH_CHAR ) {
         /* hh */
-        ret = ( long long ) va_arg( args, int );
+        ret = ( long long ) va_arg( pInputInfo->args, int );
 
-    } else if ( length == LENGTH_SHORT ) {
+    } else if ( pConvertInfo->length == LENGTH_SHORT ) {
         /* h */
-        ret = ( long long ) va_arg( args, int );
+        ret = ( long long ) va_arg( pInputInfo->args, int );
 
-    } else if ( length == LENGTH_LONG ) {
+    } else if ( pConvertInfo->length == LENGTH_LONG ) {
         /* l */
-        ret =  ( long long ) va_arg( args, long );
+        ret =  ( long long ) va_arg( pInputInfo->args, long );
 
-    } else if ( length == LENGTH_LONG_LONG ) {
+    } else if ( pConvertInfo->length == LENGTH_LONG_LONG ) {
         /* ll */
-        ret =  va_arg( args, long long );
+        ret =  va_arg( pInputInfo->args, long long );
 
-    } else if ( length == LENGTH_INTMAX ) {
+    } else if ( pConvertInfo->length == LENGTH_INTMAX ) {
         /* j */
-        ret =  ( long long ) va_arg( args, intmax_t );
+        ret =  ( long long ) va_arg( pInputInfo->args, intmax_t );
 
-    } else if ( length == LENGTH_SIZE ) {
+    } else if ( pConvertInfo->length == LENGTH_SIZE ) {
         /* z */
-        ret =  ( long long ) va_arg( args, size_t );
+        ret =  ( long long ) va_arg( pInputInfo->args, size_t );
 
-    } else if ( length == LENGTH_PTRDIFF ) {
+    } else if ( pConvertInfo->length == LENGTH_PTRDIFF ) {
         /* Z */
-        ret =  ( long long ) va_arg( args, ptrdiff_t );
+        ret =  ( long long ) va_arg( pInputInfo->args, ptrdiff_t );
 
     } else {
         /* 他 */
-        ret = ( long long ) va_arg( args, int );
+        ret = ( long long ) va_arg( pInputInfo->args, int );
     }
 
     return ret;
@@ -898,17 +901,17 @@ static long long PopSignedInteger( va_list args,
 
 /******************************************************************************/
 /**
- * @brief       符号無し引数値取得
- * @details     長さ修飾子に基づき符号無し引数値を取得する。
+ * @brief           符号無し引数値取得
+ * @details         長さ修飾子に基づき符号無し引数値を取得する。
  *
- * @param[in]   args    可変長引数リスト
- * @param[in]   length  長さ修飾子
+ * @param[in,out]   *pInputInfo   入力先情報
+ * @param[out]      *pConvertInfo 変換情報
  *
- * @return      引数値を返す。
+ * @return          引数値を返す。
  */
 /******************************************************************************/
-static unsigned long long PopUnsignedInteger( va_list args,
-                                              uint8_t length )
+static unsigned long long PopUnsignedInteger( InputInfo_t   *pInputInfo,
+                                              ConvertInfo_t *pConvertInfo )
 {
     unsigned long long ret;
 
@@ -916,37 +919,37 @@ static unsigned long long PopUnsignedInteger( va_list args,
     ret = 0;
 
     /* 長さ修飾子判定 */
-    if ( length == LENGTH_CHAR ) {
+    if ( pConvertInfo->length == LENGTH_CHAR ) {
         /* hh */
-        ret = ( unsigned long long ) va_arg( args, unsigned int );
+        ret = ( unsigned long long ) va_arg( pInputInfo->args, unsigned int );
 
-    } else if ( length == LENGTH_SHORT ) {
+    } else if ( pConvertInfo->length == LENGTH_SHORT ) {
         /* h */
-        ret = ( unsigned long long ) va_arg( args, unsigned int );
+        ret = ( unsigned long long ) va_arg( pInputInfo->args, unsigned int );
 
-    } else if ( length == LENGTH_LONG ) {
+    } else if ( pConvertInfo->length == LENGTH_LONG ) {
         /* l */
-        ret =  ( unsigned long long ) va_arg( args, unsigned long );
+        ret =  ( unsigned long long ) va_arg( pInputInfo->args, unsigned long );
 
-    } else if ( length == LENGTH_LONG_LONG ) {
+    } else if ( pConvertInfo->length == LENGTH_LONG_LONG ) {
         /* ll */
-        ret =  va_arg( args, unsigned long long );
+        ret =  va_arg( pInputInfo->args, unsigned long long );
 
-    } else if ( length == LENGTH_INTMAX ) {
+    } else if ( pConvertInfo->length == LENGTH_INTMAX ) {
         /* j */
-        ret =  ( unsigned long long ) va_arg( args, intmax_t );
+        ret =  ( unsigned long long ) va_arg( pInputInfo->args, intmax_t );
 
-    } else if ( length == LENGTH_SIZE ) {
+    } else if ( pConvertInfo->length == LENGTH_SIZE ) {
         /* z */
-        ret =  ( unsigned long long ) va_arg( args, size_t );
+        ret =  ( unsigned long long ) va_arg( pInputInfo->args, size_t );
 
-    } else if ( length == LENGTH_PTRDIFF ) {
+    } else if ( pConvertInfo->length == LENGTH_PTRDIFF ) {
         /* Z */
-        ret =  ( unsigned long long ) va_arg( args, ptrdiff_t );
+        ret =  ( unsigned long long ) va_arg( pInputInfo->args, ptrdiff_t );
 
     } else {
         /* 他 */
-        ret = ( unsigned long long ) va_arg( args, unsigned int );
+        ret = ( unsigned long long ) va_arg( pInputInfo->args, unsigned int );
     }
 
     return ret;

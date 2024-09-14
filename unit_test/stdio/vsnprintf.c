@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*                                                                            */
 /* unit_test/stdio/vsnprintf.c                                                */
-/*                                                                 2024/05/12 */
+/*                                                                 2024/06/22 */
 /* Copyright (C) 2024 Mochi.                                                  */
 /*                                                                            */
 /******************************************************************************/
@@ -265,34 +265,34 @@ static void stub_GetWidth( InputInfo_t   *pInputInfo,
 
 /* PopSignedInteger */
 struct {
-    va_list   *pArgs;
-    uint8_t   length;
-    long long ret;
+    InputInfo_t   *pInputInfo;
+    ConvertInfo_t *pConvertInfo;
+    long long     ret;
 } param_PopSignedInteger;
-static long long stub_PopSignedInteger( va_list args,
-                                        uint8_t length )
+static long long stub_PopSignedInteger( InputInfo_t   *pInputInfo,
+                                        ConvertInfo_t *pConvertInfo )
 {
     UtilSetCallCount( ( void * ) PopSignedInteger );
 
-    param_PopSignedInteger.pArgs  = ( va_list * ) args;
-    param_PopSignedInteger.length = length;
+    param_PopSignedInteger.pInputInfo   = pInputInfo;
+    param_PopSignedInteger.pConvertInfo = pConvertInfo;
 
     return param_PopSignedInteger.ret;
 }
 
 /* PopUnsignedInteger */
 struct {
-    va_list            *pArgs;
-    uint8_t            length;
+    InputInfo_t        *pInputInfo;
+    ConvertInfo_t      *pConvertInfo;
     unsigned long long ret;
 } param_PopUnsignedInteger;
-static unsigned long long stub_PopUnsignedInteger( va_list args,
-                                                   uint8_t length )
+static unsigned long long stub_PopUnsignedInteger( InputInfo_t   *pInputInfo,
+                                                   ConvertInfo_t *pConvertInfo )
 {
     UtilSetCallCount( ( void * ) PopUnsignedInteger );
 
-    param_PopUnsignedInteger.pArgs  = ( va_list * ) args;
-    param_PopUnsignedInteger.length = length;
+    param_PopUnsignedInteger.pInputInfo   = pInputInfo;
+    param_PopUnsignedInteger.pConvertInfo = pConvertInfo;
 
     return param_PopUnsignedInteger.ret;
 }
@@ -790,8 +790,8 @@ static void test_ConvertPercent( void )
         param_PopSignedInteger.ret = _IN_VALUE;                                                         \
                                                                                                         \
         /* OUTPUT初期化 */                                                                              \
-        param_PopSignedInteger.pArgs          = NULL;                                                   \
-        param_PopSignedInteger.length         = ( uint8_t ) ~( _IN_LENGTH );                            \
+        param_PopSignedInteger.pInputInfo     = NULL;                                                   \
+        param_PopSignedInteger.pConvertInfo   = NULL;                                                   \
         param_SetSign.pConvertInfo            = NULL;                                                   \
         param_SetSign.value                   = ~( _IN_VALUE );                                         \
         param_SetInteger.pConvertInfo         = NULL;                                                   \
@@ -809,8 +809,8 @@ static void test_ConvertPercent( void )
         ConvertSignedInteger( &outputInfo, &inputInfo, &convertInfo );                                  \
                                                                                                         \
         /* OUTPUT判定 */                                                                                \
-        CU_ASSERT_PTR_EQUAL( param_PopSignedInteger.pArgs,          &( inputInfo.args )              ); \
-        CU_ASSERT_EQUAL(     param_PopSignedInteger.length,         _IN_LENGTH                       ); \
+        CU_ASSERT_PTR_EQUAL( param_PopSignedInteger.pInputInfo,     &inputInfo                       ); \
+        CU_ASSERT_EQUAL(     param_PopSignedInteger.pConvertInfo,   &convertInfo                     ); \
         CU_ASSERT_PTR_EQUAL( param_SetSign.pConvertInfo,            &convertInfo                     ); \
         CU_ASSERT_EQUAL(     param_SetSign.value,                   _IN_VALUE                        ); \
         CU_ASSERT_PTR_EQUAL( param_SetInteger.pConvertInfo,         &convertInfo                     ); \
@@ -1017,85 +1017,85 @@ static void test_ConvertString( void )
 /******************************************************************************/
 /* ConvertUnsginedInteger                                                     */
 /******************************************************************************/
-#define TEST_CONVERTUNSIGNEDINTEGER( _NO,                                                   \
-                                     _IN_VALUE,                                             \
-                                     _IN_LENGTH,                                            \
-                                     _IN_LENALT,                                            \
-                                     _IN_LENZERO,                                           \
-                                     _IN_LENVAL,                                            \
-                                     _IN_WIDTH,                                             \
-                                     _IN_FLAG,                                              \
-                                     _IN_PALT,                                              \
-                                     _OUT_C,                                                \
-                                     _OUT_SIZECHAR,                                         \
-                                     _OUT_CALLCNT,                                          \
-                                     _OUT_CALLFUNC_0,                                       \
-                                     _OUT_CALLFUNC_1,                                       \
-                                     _OUT_CALLFUNC_2,                                       \
-                                     _OUT_CALLFUNC_3,                                       \
-                                     _OUT_CALLFUNC_4,                                       \
-                                     _OUT_CALLFUNC_5,                                       \
-                                     _OUT_CALLFUNC_6  )                                     \
-    static void test_ConvertUnsignedInteger_##_NO( void )                                   \
-    {                                                                                       \
-        OutputInfo_t  outputInfo;                                                           \
-        InputInfo_t   inputInfo;                                                            \
-        ConvertInfo_t convertInfo;                                                          \
-                                                                                            \
-        /* INPUT設定 */                                                                     \
-        UtilInit();                                                                         \
-        convertInfo.length           = _IN_LENGTH;                                          \
-        convertInfo.lenAlt           = _IN_LENALT;                                          \
-        convertInfo.lenZero          = _IN_LENZERO;                                         \
-        convertInfo.lenVal           = _IN_LENVAL;                                          \
-        convertInfo.width            = _IN_WIDTH;                                           \
-        convertInfo.flag             = _IN_FLAG;                                            \
-        convertInfo.pAlt             = _IN_PALT;                                            \
-        param_PopUnsignedInteger.ret = _IN_VALUE;                                           \
-                                                                                            \
-        /* OUTPUT初期化 */                                                                  \
-        param_PopUnsignedInteger.pArgs        = NULL;                                       \
-        param_PopUnsignedInteger.length       = ( uint8_t ) ~( _IN_LENGTH ) ;               \
-        param_SetAlt.pConvertInfo             = NULL;                                       \
-        param_SetInteger.pConvertInfo         = NULL;                                       \
-        param_SetInteger.value                = ~( _IN_VALUE );                             \
-        param_SetZeroVsPrecision.pConvertInfo = NULL;                                       \
-        param_PutChar[ 0 ].pOutputInfo        = NULL;                                       \
-        param_PutChar[ 0 ].c                  = ~( _OUT_C );                                \
-        param_PutChar[ 0 ].sizeChar           = ~( _OUT_SIZECHAR );                         \
-        param_PutStr.pOutputInfo              = NULL;                                       \
-        param_PutStr.pStr                     = NULL;                                       \
-        param_PutStr.sizeStr                  = ~( _IN_LENALT );                            \
-        param_PutInteger.pOutputInfo          = NULL;                                       \
-        param_PutInteger.pConvertInfo         = NULL;                                       \
-                                                                                            \
-        ConvertUnsignedInteger( &outputInfo, &inputInfo, &convertInfo );                    \
-                                                                                            \
-        /* OUTPUT判定 */                                                                    \
-        CU_ASSERT_PTR_EQUAL( param_PopUnsignedInteger.pArgs,        &( inputInfo.args ) );  \
-        CU_ASSERT_EQUAL(     param_PopUnsignedInteger.length,       _IN_LENGTH          );  \
-        CU_ASSERT_PTR_EQUAL( param_SetAlt.pConvertInfo,             &convertInfo        );  \
-        CU_ASSERT_PTR_EQUAL( param_SetInteger.pConvertInfo,         &convertInfo        );  \
-        CU_ASSERT_EQUAL(     param_SetInteger.value,                _IN_VALUE           );  \
-        CU_ASSERT_PTR_EQUAL( param_SetZeroVsPrecision.pConvertInfo, &convertInfo        );  \
-        CU_ASSERT_PTR_EQUAL( param_PutChar[ 0 ].pOutputInfo,        &outputInfo         );  \
-        CU_ASSERT_EQUAL(     param_PutChar[ 0 ].c,                  _OUT_C              );  \
-        CU_ASSERT_EQUAL(     param_PutChar[ 0 ].sizeChar,           _OUT_SIZECHAR       );  \
-        CU_ASSERT_PTR_EQUAL( param_PutStr.pOutputInfo,              &outputInfo         );  \
-        CU_ASSERT_PTR_EQUAL( param_PutStr.pStr,                     _IN_PALT            );  \
-        CU_ASSERT_EQUAL(     param_PutStr.sizeStr,                  _IN_LENALT          );  \
-        CU_ASSERT_PTR_EQUAL( param_PutInteger.pOutputInfo,          &outputInfo         );  \
-        CU_ASSERT_PTR_EQUAL( param_PutInteger.pConvertInfo,         &convertInfo        );  \
-        CU_ASSERT_EQUAL(     UtilGetCallCount(),                    _OUT_CALLCNT        );  \
-        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 0 ),                  _OUT_CALLFUNC_0     );  \
-        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 1 ),                  _OUT_CALLFUNC_1     );  \
-        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 2 ),                  _OUT_CALLFUNC_2     );  \
-        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 3 ),                  _OUT_CALLFUNC_3     );  \
-        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 4 ),                  _OUT_CALLFUNC_4     );  \
-        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 5 ),                  _OUT_CALLFUNC_5     );  \
-        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 6 ),                  _OUT_CALLFUNC_6     );  \
-                                                                                            \
-        return;                                                                             \
+#define TEST_CONVERTUNSIGNEDINTEGER( _NO,                                               \
+                                     _IN_VALUE,                                         \
+                                     _IN_LENGTH,                                        \
+                                     _IN_LENALT,                                        \
+                                     _IN_LENZERO,                                       \
+                                     _IN_LENVAL,                                        \
+                                     _IN_WIDTH,                                         \
+                                     _IN_FLAG,                                          \
+                                     _IN_PALT,                                          \
+                                     _OUT_C,                                            \
+                                     _OUT_SIZECHAR,                                     \
+                                     _OUT_CALLCNT,                                      \
+                                     _OUT_CALLFUNC_0,                                   \
+                                     _OUT_CALLFUNC_1,                                   \
+                                     _OUT_CALLFUNC_2,                                   \
+                                     _OUT_CALLFUNC_3,                                   \
+                                     _OUT_CALLFUNC_4,                                   \
+                                     _OUT_CALLFUNC_5,                                   \
+                                     _OUT_CALLFUNC_6  )                                 \
+    static void test_ConvertUnsignedInteger_##_NO( void )                               \
+    {                                                                                   \
+        OutputInfo_t  outputInfo;                                                       \
+        InputInfo_t   inputInfo;                                                        \
+        ConvertInfo_t convertInfo;                                                      \
+                                                                                        \
+        /* INPUT設定 */                                                                 \
+        UtilInit();                                                                     \
+        convertInfo.length           = _IN_LENGTH;                                      \
+        convertInfo.lenAlt           = _IN_LENALT;                                      \
+        convertInfo.lenZero          = _IN_LENZERO;                                     \
+        convertInfo.lenVal           = _IN_LENVAL;                                      \
+        convertInfo.width            = _IN_WIDTH;                                       \
+        convertInfo.flag             = _IN_FLAG;                                        \
+        convertInfo.pAlt             = _IN_PALT;                                        \
+        param_PopUnsignedInteger.ret = _IN_VALUE;                                       \
+                                                                                        \
+        /* OUTPUT初期化 */                                                              \
+        param_PopUnsignedInteger.pInputInfo   = NULL;                                   \
+        param_PopUnsignedInteger.pConvertInfo = NULL;                                   \
+        param_SetAlt.pConvertInfo             = NULL;                                   \
+        param_SetInteger.pConvertInfo         = NULL;                                   \
+        param_SetInteger.value                = ~( _IN_VALUE );                         \
+        param_SetZeroVsPrecision.pConvertInfo = NULL;                                   \
+        param_PutChar[ 0 ].pOutputInfo        = NULL;                                   \
+        param_PutChar[ 0 ].c                  = ~( _OUT_C );                            \
+        param_PutChar[ 0 ].sizeChar           = ~( _OUT_SIZECHAR );                     \
+        param_PutStr.pOutputInfo              = NULL;                                   \
+        param_PutStr.pStr                     = NULL;                                   \
+        param_PutStr.sizeStr                  = ~( _IN_LENALT );                        \
+        param_PutInteger.pOutputInfo          = NULL;                                   \
+        param_PutInteger.pConvertInfo         = NULL;                                   \
+                                                                                        \
+        ConvertUnsignedInteger( &outputInfo, &inputInfo, &convertInfo );                \
+                                                                                        \
+        /* OUTPUT判定 */                                                                \
+        CU_ASSERT_PTR_EQUAL( param_PopUnsignedInteger.pInputInfo,   &inputInfo      );  \
+        CU_ASSERT_EQUAL(     param_PopUnsignedInteger.pConvertInfo, &convertInfo    );  \
+        CU_ASSERT_PTR_EQUAL( param_SetAlt.pConvertInfo,             &convertInfo    );  \
+        CU_ASSERT_PTR_EQUAL( param_SetInteger.pConvertInfo,         &convertInfo    );  \
+        CU_ASSERT_EQUAL(     param_SetInteger.value,                _IN_VALUE       );  \
+        CU_ASSERT_PTR_EQUAL( param_SetZeroVsPrecision.pConvertInfo, &convertInfo    );  \
+        CU_ASSERT_PTR_EQUAL( param_PutChar[ 0 ].pOutputInfo,        &outputInfo     );  \
+        CU_ASSERT_EQUAL(     param_PutChar[ 0 ].c,                  _OUT_C          );  \
+        CU_ASSERT_EQUAL(     param_PutChar[ 0 ].sizeChar,           _OUT_SIZECHAR   );  \
+        CU_ASSERT_PTR_EQUAL( param_PutStr.pOutputInfo,              &outputInfo     );  \
+        CU_ASSERT_PTR_EQUAL( param_PutStr.pStr,                     _IN_PALT        );  \
+        CU_ASSERT_EQUAL(     param_PutStr.sizeStr,                  _IN_LENALT      );  \
+        CU_ASSERT_PTR_EQUAL( param_PutInteger.pOutputInfo,          &outputInfo     );  \
+        CU_ASSERT_PTR_EQUAL( param_PutInteger.pConvertInfo,         &convertInfo    );  \
+        CU_ASSERT_EQUAL(     UtilGetCallCount(),                    _OUT_CALLCNT    );  \
+        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 0 ),                  _OUT_CALLFUNC_0 );  \
+        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 1 ),                  _OUT_CALLFUNC_1 );  \
+        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 2 ),                  _OUT_CALLFUNC_2 );  \
+        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 3 ),                  _OUT_CALLFUNC_3 );  \
+        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 4 ),                  _OUT_CALLFUNC_4 );  \
+        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 5 ),                  _OUT_CALLFUNC_5 );  \
+        CU_ASSERT_PTR_EQUAL( UtilGetCallFunc( 6 ),                  _OUT_CALLFUNC_6 );  \
+                                                                                        \
+        return;                                                                         \
     }
 
 /*-------------------------+---+---------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------*/
@@ -1781,14 +1781,17 @@ static void test_GetWidth( void )
 /******************************************************************************/
 static long long test_PopSignedInteger_main( uint8_t length, ... )
 {
-    va_list   args;
-    long long ret;
+    InputInfo_t   inputInfo;
+    ConvertInfo_t convertInfo;
+    long long     ret;
 
-    va_start( args, length );
+    va_start( inputInfo.args, length );
 
-    ret = PopSignedInteger( args, length );
+    convertInfo.length = length;
 
-    va_end( args );
+    ret = PopSignedInteger( &inputInfo, &convertInfo );
+
+    va_end( inputInfo.args );
 
     return ret;
 }
@@ -1888,14 +1891,17 @@ static void test_PopSignedInteger( void )
 /******************************************************************************/
 static unsigned long long test_PopUnsignedInteger_main( uint8_t length, ... )
 {
-    va_list            args;
+    InputInfo_t        inputInfo;
+    ConvertInfo_t      convertInfo;
     unsigned long long ret;
 
-    va_start( args, length );
+    va_start( inputInfo.args, length );
 
-    ret = PopUnsignedInteger( args, length );
+    convertInfo.length = length;
 
-    va_end( args );
+    ret = PopUnsignedInteger( &inputInfo, &convertInfo );
+
+    va_end( inputInfo.args );
 
     return ret;
 }
